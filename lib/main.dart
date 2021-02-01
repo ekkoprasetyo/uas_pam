@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:uas_pam_app/home_page.dart';
+import 'package:uas_pam_app/login.dart';
 import 'home_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -11,7 +12,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: "Eko Prasetyo - 20180801185",
       debugShowCheckedModeBanner: false,
-      home: MainPage(),
+      home: LoginPage(),
       theme: ThemeData(
           accentColor: Colors.white70
       ),

@@ -53,12 +53,6 @@ flutter:
   #   - images/a_dot_ham.jpeg
 
   assets:
-    - images/header.jpg
-    - images/twitter.png
-    - images/google.png
-    - images/linkedin.png
-    - images/facebook.png
-    - images/fruit.png
     - images/dunski.jpeg
     - images/logo.png
 

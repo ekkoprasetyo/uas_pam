@@ -1,5 +1,4 @@
 import 'package:uas_pam_app/data_page.dart';
-
 import 'login.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
@@ -66,7 +65,7 @@ class _MainPageState extends State<MainPage> {
               padding: const EdgeInsets.only(left: 10, right: 10, top: 30),
               child: RaisedButton(
                 onPressed: () {
-                  Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (BuildContext context) => DataPage()), (Route<dynamic> route) => true);
+                  Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (BuildContext context) => DataPage()), (Route<dynamic> route) => false);
                 },
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(80.0),

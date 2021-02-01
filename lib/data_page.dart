@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'home_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class DataPage extends StatefulWidget {
@@ -14,17 +15,48 @@ class _DataPageState extends State<DataPage> {
   bool _isLoading = false;
   SharedPreferences sharedPreferences;
   String token = '';
+  List<Result> data_results;
 
   @override
   void initState() {
     super.initState();
-    getState();
+    _loadToken();
   }
 
-  getState() async {
-    sharedPreferences = await SharedPreferences.getInstance();
-    token = sharedPreferences.getString("token");
+  _loadToken() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      token = (prefs.getString('token')??'');
+    });
+    setState(() {
+      _isLoading = true;
+    });
+    var response = await http.get(
+        "https://mg-indonesia.co.id/api/v1/opname/2020-11-28/2020-11-28",
+        headers: <String, String>{
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json;',
+        }
+    );
+    if(response.statusCode == 200) {
+      Map<String, dynamic> body = json.decode(response.body);
+      if(body['version'] != null) {
+        setState(() {
+          _isLoading = false;
+        });
+        List<Result> results = List<Result>.from(body["result"][0].map((x) => Result.fromJson(x)));
+        data_results = results;
+      }
+    }
+    else {
+      setState(() {
+        _isLoading = false;
+      });
+      print(response.body);
+    }
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -33,16 +65,56 @@ class _DataPageState extends State<DataPage> {
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-              colors: [Colors.grey,Colors.blue[200]],
+              colors: [Colors.lightBlueAccent,Colors.blue[200]],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter),
         ),
-        child: _isLoading ? Center(child: CircularProgressIndicator()) : ListView(
-          children: <Widget>[
-            headerSection(),
-            getData(token),
-            dataSection(),
-          ],
+        child: _isLoading ? Center(child: CircularProgressIndicator()) : ListView.builder(
+          itemCount: data_results.length,
+          itemBuilder: (context, index) => Card(
+            child: ListTile(
+              title: Card(
+                margin: const EdgeInsets.all(20.0),
+                elevation: 8,
+                child: Padding(
+                  padding: const EdgeInsets.all(15.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Padding(
+                        padding: const EdgeInsets.only(top: 10),
+                        child: Text(
+                          "Area : "+data_results[index].area,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 25,
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 10),
+                        child: Text(
+                          "Category : "+data_results[index].category,
+                          style: TextStyle(
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 10),
+                        child: Text(
+                          "Name : "+data_results[index].name,
+                          style: TextStyle(
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -50,39 +122,6 @@ class _DataPageState extends State<DataPage> {
 
   final TextEditingController usernameController = new TextEditingController();
   final TextEditingController passwordController = new TextEditingController();
-
-  getData(token) async {
-    showAlertDialog(context, token);
-    var response = await http.get(
-      "https://mg-indonesia.co.id/api/v1/opname/2020-11-26/2020-11-26",
-      headers: <String, String>{
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json;',
-      }
-    );
-    // if(response.statusCode == 200) {
-    //   final Map body = json.decode(response.body);
-    //   if(body['result'] == null) {
-    //     setState(() {
-    //       _isLoading = false;
-    //     });
-    //     showAlertDialog(context, "Something wrong ..");
-    //   }
-    //   if(body['version'] != null) {
-    //     setState(() {
-    //       _isLoading = false;
-    //     });
-    //     final res_data = Welcome.fromJson(body);
-    //     showAlertDialog(context, res_data.version);
-    //   }
-    // }
-    // else {
-    //   setState(() {
-    //     _isLoading = false;
-    //   });
-    //   print(response.body);
-    // }
-  }
 
   Container dataSection() {
     return Container(
@@ -165,12 +204,11 @@ class _DataPageState extends State<DataPage> {
       margin: EdgeInsets.only(top: 50.0),
       padding: EdgeInsets.symmetric(horizontal: 20.0, vertical: 30.0),
       alignment: Alignment.center,
-      child: Text("Data Page",
+      child: Text("List Data",
           style: TextStyle(
               color: Colors.white70,
               fontSize: 30.0,
-              fontWeight: FontWeight.bold)
-      ),
+              fontWeight: FontWeight.bold)),
     );
   }
 }
@@ -186,7 +224,7 @@ showAlertDialog(BuildContext context, String text) {
 
   // Create AlertDialog
   AlertDialog alert = AlertDialog(
-    title: Text('Title'),
+    title: Text('List Data'),
     content: Text(text),
     actions: [
       okButton,
@@ -202,70 +240,77 @@ showAlertDialog(BuildContext context, String text) {
   );
 }
 
-class Welcome {
-  Welcome({
-    this.version,
-    this.result,
-  });
-
+class resultData {
   String version;
-  List<dynamic> result;
+  List<Result> result;
 
-  factory Welcome.fromJson(Map<String, dynamic> json) => Welcome(
-    version: json["version"],
-    result: List<dynamic>.from(json["result"].map((x) => x)),
-  );
+  resultData({this.version, this.result});
 
-  Map<String, dynamic> toJson() => {
-    "version": version,
-    "result": List<dynamic>.from(result.map((x) => x)),
-  };
+  resultData.fromJson(Map<String, dynamic> json) {
+    version = json['version'];
+    if (json['result'][0] != null) {
+      result = new List<Result>();
+      json['result'][0].forEach((v) {
+        result.add(new Result.fromJson(v));
+      });
+    }
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['version'] = this.version;
+    if (this.result != null) {
+      data['result'][0] = this.result.map((v) => v.toJson()).toList();
+    }
+    return data;
+  }
 }
 
-class ResultClass {
-  ResultClass({
-    this.productUomId,
-    this.id,
-    this.productQtyCorrect,
-    this.area,
-    this.createDate,
-    this.category,
-    this.name,
-    this.productQty,
-    this.productId,
-  });
-
-  String productUomId;
+class Result {
+  bool productUomId;
   int id;
-  int productQtyCorrect;
+  double productQtyCorrect;
   String area;
-  DateTime createDate;
+  String createDate;
   String category;
   String name;
   double productQty;
   String productId;
 
-  factory ResultClass.fromJson(Map<String, dynamic> json) => ResultClass(
-    productUomId: json["product_uom_id"],
-    id: json["id"],
-    productQtyCorrect: json["product_qty_correct"],
-    area: json["area"],
-    createDate: DateTime.parse(json["create_date"]),
-    category: json["category"],
-    name: json["name"],
-    productQty: json["product_qty"].toDouble(),
-    productId: json["product_id"],
-  );
+  Result(
+      {this.productUomId,
+        this.id,
+        this.productQtyCorrect,
+        this.area,
+        this.createDate,
+        this.category,
+        this.name,
+        this.productQty,
+        this.productId});
 
-  Map<String, dynamic> toJson() => {
-    "product_uom_id": productUomId,
-    "id": id,
-    "product_qty_correct": productQtyCorrect,
-    "area": area,
-    "create_date": createDate.toIso8601String(),
-    "category": category,
-    "name": name,
-    "product_qty": productQty,
-    "product_id": productId,
-  };
+  Result.fromJson(Map<String, dynamic> json) {
+    // productUomId = json['product_uom_id'];
+    id = json['id'];
+    productQtyCorrect = json['product_qty_correct'];
+    area = json['area'];
+    createDate = json['create_date'];
+    category = json['category'];
+    name = json['name'];
+    productQty = json['product_qty'];
+    // productId = json['product_id'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['product_uom_id'] = this.productUomId;
+    data['id'] = this.id;
+    data['product_qty_correct'] = this.productQtyCorrect;
+    data['area'] = this.area;
+    data['create_date'] = this.createDate;
+    data['category'] = this.category;
+    data['name'] = this.name;
+    data['product_qty'] = this.productQty;
+    data['product_id'] = this.productId;
+    return data;
+  }
 }
